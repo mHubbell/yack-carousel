@@ -154,7 +154,7 @@
             this.options.breakpoints.forEach(function(element, index){
                 var maxWidth = element.max ? element.max : 10000000;
                 var minWidth = element.min ? element.min : 0;
-                if(windowWidth < maxWidth && windowWidth > minWidth) {
+                if(windowWidth <= maxWidth && windowWidth >= minWidth) {
                     return returnBreakpoint = element;
                 }
             });
