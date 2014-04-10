@@ -110,9 +110,10 @@
         if(pCount !== this.pageCount && this.options.pagination) {
             this.pageCount = pCount;
             this._generatePagination();
+            // go to page 1
+            this.gotoPage(1);
         }
-        // go to page 1
-        this.gotoPage(1);
+        
     };
     
     /**
@@ -231,6 +232,9 @@
             for(var i = 0; i < this.pageCount; i++) {
                 var $pager = $('<span class="yack-pagination-page"></span>');
                 $pager.data('yack-page',i + 1);
+                if(i + 1 == this.currentPage) {
+                    $pager.addClass('active');
+                }
                 this.$paginationWrapper.append($pager);
             }
             // resize wrapper
