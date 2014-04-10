@@ -9,3 +9,31 @@
 .yack-carousel .yack-item-wrapper {
 	float:left;
 }
+.yack-carousel .yack-pagination{
+	display:block;
+	width:0;
+	margin-left:auto;
+	margin-right:auto;
+	margin-top:20px;
+	overflow:hidden;
+}
+.yack-carousel .yack-pagination > .yack-pagination-page {
+	display:inline-block;
+	float:left;
+	width:20px;
+	height:20px;
+	margin-right:25px;
+	background-color: #dedede;
+	border-radius:50%;
+	border:0px solid;
+	cursor:pointer;
+}
+.yack-carousel .yack-pagination > .yack-pagination-page:last-child{
+	margin-right:0;
+}
+.yack-carousel .yack-pagination > .yack-pagination-page.active{
+	background-color:#436F9F;
+}
+.yack-carousel .yack-pagination > .yack-pagination-page:hover{
+	background-color: #121212;
+}
