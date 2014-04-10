@@ -22,5 +22,9 @@
     "bower_components",
     "test",
     "tests"
-  ]
+  ],
+  "dependencies": {
+    "jquery": ">1.3.2",
+    "jquery-throttle-debounce": "https://github.com/cowboy/jquery-throttle-debounce.git#v1.1"
+  }
 }

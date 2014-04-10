@@ -55,9 +55,10 @@
             this._nativeItemHeight = $firstItem.height();
         }
         // listen for resize to adjust
-        $(window).on('resize.yack-carousel',function(){
-            plugin.resize();
-        })
+        $(window).on('resize.yack-carousel', 
+                $.debounce( 250, function(){ 
+                    plugin.resize();
+                }));
         // run resize to initialize sizing
         this.resize();
     };
