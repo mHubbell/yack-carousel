@@ -124,10 +124,16 @@
             // determine target x position for wrapper
             var xVal = 0;
             var windowWidth = this.$yackWindow.width();
+            this.$yackWindow.removeClass('yack-page-first yack-page-last yack-page-middle');
             if(page === this.pageCount) {
                 xVal = (this.totalItemWidth - windowWidth) * -1;
+                this.$yackWindow.addClass('yack-page-last');
             } else if(page > 1 && page < this.pageCount){
                 xVal = ((this.fitsOnPage * this.itemWidth) * (page - 1)) * -1;
+                this.$yackWindow.addClass('yack-page-middle');
+            } else {
+                xVal = 0;
+                this.$yackWindow.addClass('yack-page-first');
             }
             // animate it there
             this.$yackWrapper.animate({left:xVal},"fast");
