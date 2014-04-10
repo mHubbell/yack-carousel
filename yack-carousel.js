@@ -105,12 +105,13 @@
     
     /**
      * Go to a given page
+     * @param page
      */
     YackCarousel.prototype.gotoPage = function(page) {
         if(page != this._currentPage) {
             // set current page
             this._currentPage = page;
-            // reset pagination
+            // reset active pager
             if (this.options.pagination) {
                 this.$paginationWrapper.children().each(function(){
                     $(this).removeClass('active');
@@ -168,7 +169,8 @@
     };
     
     /**
-     * 
+     * @"private"
+     * Generate pagination elements for the current page count
      */
     YackCarousel.prototype._generatePagination = function() {
         // generate wrapper
