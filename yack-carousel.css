@@ -1,5 +1,11 @@
-@CHARSET "UTF-8";
-
-.yack-carousel{
-	
+.yack-carousel *{
+	box-sizing:border-box;
+    -moz-box-sizing:border-box;
+}
+.yack-carousel .yack-window,
+.yack-carousel .yack-wrapper{
+	overflow:hidden;
+}
+.yack-carousel .yack-item-wrapper {
+	float:left;
 }
