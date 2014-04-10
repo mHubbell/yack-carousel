@@ -59,6 +59,17 @@
                 $.debounce( 250, function(){ 
                     plugin.resize();
                 }));
+        // listen for swipes to go next and previous
+        this.$yackWindow.swipe({
+            swipe:function(event,direction) {
+                if(direction == 'left') {
+                    plugin.nextPage();
+                } else {
+                    plugin.prevPage();
+                }
+            },
+            excludedElements:[]
+        });
         // run resize to initialize sizing
         this.resize();
     };
@@ -109,9 +120,9 @@
      * @param page
      */
     YackCarousel.prototype.gotoPage = function(page) {
-        if(page != this._currentPage) {
+        if(page != this.currentPage) {
             // set current page
-            this._currentPage = page;
+            this.currentPage = page;
             // reset active pager
             if (this.options.pagination) {
                 this.$paginationWrapper.children().each(function(){
@@ -145,11 +156,30 @@
     };
     
     /**
+     * Go to the next page
+     */
+    YackCarousel.prototype.nextPage = function() {
+        if(this.currentPage < this.pageCount) {
+            this.gotoPage(this.currentPage + 1);
+        }
+    }
+    
+    /**
+     * Go to the previous page
+     */
+    YackCarousel.prototype.prevPage = function() {
+        if(this.currentPage > 1) {
+            this.gotoPage(this.currentPage - 1);
+        }
+    }
+    
+    /**
      * Destroy
      */
     YackCarousel.prototype.destroy = function() {
         $(window).off('resize.yack-carousel');
-        $paginationWrapper.off('click');
+        this.$paginationWrapper.off('click');
+        this.$yackWindow.swipe("destroy");
     };
     
     /**
