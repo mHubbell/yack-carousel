@@ -127,13 +127,17 @@
             this.$yackWindow.removeClass('yack-page-first yack-page-last yack-page-middle');
             if(page === this.pageCount) {
                 xVal = (this.totalItemWidth - windowWidth) * -1;
-                this.$yackWindow.addClass('yack-page-last');
+                if(this.pageCount > 1) {
+                    this.$yackWindow.addClass('yack-page-last');
+                }
             } else if(page > 1 && page < this.pageCount){
                 xVal = ((this.fitsOnPage * this.itemWidth) * (page - 1)) * -1;
                 this.$yackWindow.addClass('yack-page-middle');
             } else {
                 xVal = 0;
-                this.$yackWindow.addClass('yack-page-first');
+                if(this.pageCount > 1) {
+                    this.$yackWindow.addClass('yack-page-first');
+                }
             }
             // animate it there
             this.$yackWrapper.animate({left:xVal},"fast");
@@ -184,25 +188,27 @@
         if(!this.$paginationWrapper) {
             this.$paginationWrapper = $('<div class="yack-pagination"></div>');
             $(this.element).append(this.$paginationWrapper);
+            // listen for clicks on pagers
+            var plugin = this;
+            this.$paginationWrapper.on('click','.yack-pagination-page',function(){
+                plugin.gotoPage($(this).data('yack-page'));
+            })
         }
         // create pager buttons
         this.$paginationWrapper.empty();
-        for(var i = 0; i < this.pageCount; i++) {
-            var $pager = $('<span class="yack-pagination-page"></span>');
-            $pager.data('yack-page',i + 1);
-            this.$paginationWrapper.append($pager);
-        }
-        // resize wrapper
-        var totalItemWidth = 0;
-        this.$paginationWrapper.children().each(function(){
-            totalItemWidth += $(this).outerWidth(true);
-        });
-        this.$paginationWrapper.width(totalItemWidth);
-        // listen for clicks on pagers
-        var plugin = this;
-        this.$paginationWrapper.on('click','.yack-pagination-page',function(){
-            plugin.gotoPage($(this).data('yack-page'));
-        })
+        var totalPagerWidth = 0;
+        if(this.pageCount > 1) {
+            for(var i = 0; i < this.pageCount; i++) {
+                var $pager = $('<span class="yack-pagination-page"></span>');
+                $pager.data('yack-page',i + 1);
+                this.$paginationWrapper.append($pager);
+            }
+            // resize wrapper
+            this.$paginationWrapper.children().each(function(){
+                totalPagerWidth += $(this).outerWidth(true);
+            }); 
+        } 
+        this.$paginationWrapper.width(totalPagerWidth);
     };
     
     /**
