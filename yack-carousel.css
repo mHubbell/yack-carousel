@@ -1,3 +1,6 @@
+.yack-carousel{
+	display:block;
+}
 .yack-carousel *{
 	box-sizing:border-box;
     -moz-box-sizing:border-box;

@@ -27,8 +27,7 @@
      * Init
      */
     YackCarousel.prototype.init = function() {
-        // hide until resized
-        $(this.element).hide();
+        //$(this.element).hide();
         // extract elements
         this.$yackWindow = $(this.element).find('.yack-window');
         this.$yackWindow.css('overflow','hidden');
@@ -79,6 +78,10 @@
      * and recalculate pagination
      */
     YackCarousel.prototype.resize = function() {
+        // if the element is display none we cant resize
+        if($(this.element).css('display') == 'none') {
+            return;
+        }
         var breakpoint = this._getBreakpointForWidth();
         // only resize things if we are at a different breakpoint
         if (breakpoint !== this._currentBreakpoint) {
@@ -101,7 +104,7 @@
             this.$yackWindow.height(this.itemHeight);
         }
         // show now that we are looking good.
-        $(this.element).show();
+        //$(this.element).show();
         // measure window
         this.windowWidth = this.$yackWindow.width();
         // store and generate pagination info
@@ -113,7 +116,6 @@
             // go to page 1
             this.gotoPage(1);
         }
-        
     };
     
     /**
@@ -137,7 +139,7 @@
             var xVal = 0;
             var windowWidth = this.$yackWindow.width();
             this.$yackWindow.removeClass('yack-page-first yack-page-last yack-page-middle');
-            if(page === this.pageCount) {
+            if(page === this.pageCount && this.pageCount > 1) {
                 xVal = (this.totalItemWidth - windowWidth) * -1;
                 if(this.pageCount > 1) {
                     this.$yackWindow.addClass('yack-page-last');
