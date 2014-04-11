@@ -108,6 +108,9 @@
         this.windowWidth = this.$yackWindow.width();
         // store and generate pagination info
         this.fitsOnPage = Math.floor(this.windowWidth / this.itemWidth);
+        if(this.fitsOnPage < 1){
+            this.fitsOnPage = 1;
+        }
         var pCount = Math.ceil(this.totalItemWidth / (this.itemWidth * this.fitsOnPage));
         if(pCount !== this.pageCount && this.options.pagination) {
             this.pageCount = pCount;
