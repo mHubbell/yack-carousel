@@ -27,7 +27,6 @@
      * Init
      */
     YackCarousel.prototype.init = function() {
-        //$(this.element).hide();
         // extract elements
         this.$yackWindow = $(this.element).find('.yack-window');
         this.$yackWindow.css('overflow','hidden');
