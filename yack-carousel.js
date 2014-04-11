@@ -8,7 +8,12 @@
      */
     var defaults = {
             breakpoints:null,
-            pagination:false
+            pagination:false,
+            paddles:false,
+            allowSlivers:false,
+            allowHalfs:false,
+            maintainAspectRatio:false,
+            debounceDelay:500
     },
     pageCount = 0,
     currentPage = 1;
@@ -54,7 +59,7 @@
         }
         // listen for resize to adjust
         $(window).on('resize.yack-carousel', 
-                $.debounce( 250, function(){ 
+                $.debounce( plugin.options.debounceDelay, function(){ 
                     plugin.resize();
                 }));
         // listen for swipes to go next and previous
@@ -62,11 +67,11 @@
             swipe:function(event,direction) {
                 if(direction == 'left') {
                     plugin.nextPage();
-                } else {
+                } else if(direction == 'right') {
                     plugin.prevPage();
                 }
             },
-            excludedElements:[]
+            excludedElements:[] // allows swiping on a tags
         });
         // run resize to initialize sizing
         this.resize();
@@ -87,25 +92,44 @@
             // set current breakpoint
             this._currentBreakpoint = breakpoint;
             // get value for width and height from breakpoint
-            this.itemWidth = breakpoint.itemWidth ? breakpoint.itemWidth : this._nativeItemWidth;
-            this.itemHeight = breakpoint.itemHeight ? breakpoint.itemHeight : this._nativeItemHeight;
-            this.totalItemWidth = 0;
-            // set and total item dimensions
-            var plugin = this;
-            this.$yackWrapper.children().each(function(){
-                $(this).width(plugin.itemWidth);
-                $(this).height(plugin.itemHeight);
-                plugin.totalItemWidth += plugin.itemWidth;
-            });
-            // set wrapper / window dimensions and reset position
-            this.$yackWrapper.width(this.totalItemWidth);
-            this.$yackWrapper.height(this.itemHeight);
-            this.$yackWindow.height(this.itemHeight);
+            if(this.options.allowSlivers) {
+                // if we allow slivers we can size the items based on the breakpoint directly
+                // and only on breakpoint change
+                this.itemWidth = breakpoint.itemWidth ? breakpoint.itemWidth : this._nativeItemWidth;
+                this.itemHeight = breakpoint.itemHeight ? breakpoint.itemHeight : this._nativeItemHeight;
+                this._sizeItemsAndWrapper();
+            } else {
+                // otherwise we keep track the width and height as a "preferred" size
+                // but will adjust for the exact width of items below
+                this.preferredItemWidth = breakpoint.itemWidth ? breakpoint.itemWidth : this._nativeItemWidth;
+                this.preferredItemHeight = breakpoint.itemHeight ? breakpoint.itemHeight : this._nativeItemHeight;
+            }  
         }
-        // show now that we are looking good.
-        //$(this.element).show();
         // measure window
         this.windowWidth = this.$yackWindow.width();
+        // if we dont allow slivers we need to adjust the width and height of items
+        if(!this.options.allowSlivers) {
+            // based our measurements on chunks so that we can support visible halfs
+            var preferredChunkWidth = this.options.allowHalfs ? (this.preferredItemWidth / 2): this.preferredItemWidth;  
+            var chunksFit = Math.floor(this.windowWidth / preferredChunkWidth);
+            if(chunksFit < 1) {
+                chunksFit = 1;
+            }
+            // if the leftover sliver is more than half a chunk, we add another chunk
+            var diff = (this.windowWidth / preferredChunkWidth) - chunksFit;
+            if (diff > .5) {
+                chunksFit += 1;
+            }
+            // recalculate width and height
+            this.itemWidth = this.options.allowHalfs ? 
+                    Math.floor( this.windowWidth / chunksFit ) * 2 :
+                        Math.floor( this.windowWidth / chunksFit );
+            this.itemHeight = this.options.maintainAspectRatio ?
+                    this.itemWidth :
+                        this.preferredItemHeight;
+            // TODO:: MATH to maintain non-square aspect ratios...
+            this._sizeItemsAndWrapper();
+        }
         // store and generate pagination info
         this.fitsOnPage = Math.floor(this.windowWidth / this.itemWidth);
         if(this.fitsOnPage < 1){
@@ -114,9 +138,15 @@
         var pCount = Math.ceil(this.totalItemWidth / (this.itemWidth * this.fitsOnPage));
         if(pCount !== this.pageCount && this.options.pagination) {
             this.pageCount = pCount;
-            this._generatePagination();
-            // go to page 1
+            // create paginator elements if we paginate
+            if(this.options.pagination || this.options.paddles) {
+                this._generatePagination();
+            }
+            // go to page 1 on page count change
             this.gotoPage(1);
+        } else {
+            // go to the current page
+            this.gotoPage(this.currentPage);
         }
     };
     
@@ -125,39 +155,37 @@
      * @param page
      */
     YackCarousel.prototype.gotoPage = function(page) {
-        if(page != this.currentPage) {
-            // set current page
-            this.currentPage = page;
-            // reset active pager
-            if (this.options.pagination) {
-                this.$paginationWrapper.children().each(function(){
-                    $(this).removeClass('active');
-                    if($(this).data('yack-page') == page){
-                        $(this).addClass('active');
-                    }
-                });
-            }
-            // determine target x position for wrapper
-            var xVal = 0;
-            var windowWidth = this.$yackWindow.width();
-            this.$yackWindow.removeClass('yack-page-first yack-page-last yack-page-middle');
-            if(page === this.pageCount && this.pageCount > 1) {
-                xVal = (this.totalItemWidth - windowWidth) * -1;
-                if(this.pageCount > 1) {
-                    this.$yackWindow.addClass('yack-page-last');
+        // set current page
+        this.currentPage = page;
+        // reset active pager
+        if (this.options.pagination) {
+            this.$paginationWrapper.children().each(function(){
+                $(this).removeClass('active');
+                if($(this).data('yack-page') == page){
+                    $(this).addClass('active');
                 }
-            } else if(page > 1 && page < this.pageCount){
-                xVal = ((this.fitsOnPage * this.itemWidth) * (page - 1)) * -1;
-                this.$yackWindow.addClass('yack-page-middle');
-            } else {
-                xVal = 0;
-                if(this.pageCount > 1) {
-                    this.$yackWindow.addClass('yack-page-first');
-                }
-            }
-            // animate it there
-            this.$yackWrapper.animate({left:xVal},"fast");
+            });
         }
+        // determine target x position for wrapper
+        var xVal = 0;
+        var windowWidth = this.$yackWindow.width();
+        this.$yackWindow.removeClass('yack-page-first yack-page-last yack-page-middle');
+        if(page === this.pageCount && this.pageCount > 1) {
+            xVal = (this.totalItemWidth - windowWidth) * -1;
+            if(this.pageCount > 1) {
+                this.$yackWindow.addClass('yack-page-last');
+            }
+        } else if(page > 1 && page < this.pageCount){
+            xVal = ((this.fitsOnPage * this.itemWidth) * (page - 1)) * -1;
+            this.$yackWindow.addClass('yack-page-middle');
+        } else {
+            xVal = 0;
+            if(this.pageCount > 1) {
+                this.$yackWindow.addClass('yack-page-first');
+            }
+        }
+        // animate it there
+        this.$yackWrapper.animate({left:xVal},"fast");
     };
     
     /**
@@ -183,6 +211,9 @@
      */
     YackCarousel.prototype.destroy = function() {
         $(window).off('resize.yack-carousel');
+        this.$paginationWrapper.off('click');
+        this.$paddleNext.off('click');
+        this.$paddlePrev.off('click');
         this.$paginationWrapper.off('click');
         this.$yackWindow.swipe("destroy");
     };
@@ -219,35 +250,75 @@
      * Generate pagination elements for the current page count
      */
     YackCarousel.prototype._generatePagination = function() {
-        // generate wrapper
-        if(!this.$paginationWrapper) {
-            this.$paginationWrapper = $('<div class="yack-pagination"></div>');
-            $(this.element).append(this.$paginationWrapper);
-            // listen for clicks on pagers
-            var plugin = this;
-            this.$paginationWrapper.on('click','.yack-pagination-page',function(){
-                plugin.gotoPage($(this).data('yack-page'));
-            })
-        }
-        // create pager buttons
-        this.$paginationWrapper.empty();
-        var totalPagerWidth = 0;
-        if(this.pageCount > 1) {
-            for(var i = 0; i < this.pageCount; i++) {
-                var $pager = $('<span class="yack-pagination-page"></span>');
-                $pager.data('yack-page',i + 1);
-                if(i + 1 == this.currentPage) {
-                    $pager.addClass('active');
-                }
-                this.$paginationWrapper.append($pager);
+        // plugin reference
+        var plugin = this;
+        // generate paginator dots
+        if(this.options.pagination) {
+            // generate wrapper
+            if(!this.$paginationWrapper) {
+                this.$paginationWrapper = $('<div class="yack-pagination"></div>');
+                $(this.element).append(this.$paginationWrapper);
+                // listen for clicks on pagers
+                
+                this.$paginationWrapper.on('click','.yack-pagination-page',function(){
+                    plugin.gotoPage($(this).data('yack-page'));
+                })
             }
-            // resize wrapper
-            this.$paginationWrapper.children().each(function(){
-                totalPagerWidth += $(this).outerWidth(true);
-            }); 
-        } 
-        this.$paginationWrapper.width(totalPagerWidth);
+            // create pager buttons
+            this.$paginationWrapper.empty();
+            var totalPagerWidth = 0;
+            if(this.pageCount > 1) {
+                for(var i = 0; i < this.pageCount; i++) {
+                    var $pager = $('<span class="yack-pagination-page"></span>');
+                    $pager.data('yack-page',i + 1);
+                    if(i + 1 == this.currentPage) {
+                        $pager.addClass('active');
+                    }
+                    this.$paginationWrapper.append($pager);
+                }
+                // resize wrapper
+                this.$paginationWrapper.children().each(function(){
+                    totalPagerWidth += $(this).outerWidth(true);
+                }); 
+            } 
+            this.$paginationWrapper.width(totalPagerWidth);
+        }
+        // add paddle elements
+        if(this.options.paddles) {
+            if(!this.$paddleNext) {
+                this.$paddleNext = $('<div class="yack-paddle yack-paddle-next"></div>');
+                $(this.element).append(this.$paddleNext);
+                this.$paddleNext.on('click',function(){
+                    plugin.nextPage();
+                });
+            }
+            if(!this.$paddlePrev) {
+                this.$paddlePrev = $('<div class="yack-paddle yack-paddle-prev"></div>');
+                $(this.element).append(this.$paddlePrev);
+                this.$paddlePrev.on('click',function(){
+                    plugin.prevPage();
+                });
+            }
+        }
+        
     };
+    
+    /**
+     * Size the items and the wrapper based on the determined item width and height
+     */
+    YackCarousel.prototype._sizeItemsAndWrapper = function() {
+        this.totalItemWidth = 0;
+        var plugin = this;
+        this.$yackWrapper.children().each(function(){
+            $(this).width(plugin.itemWidth);
+            $(this).height(plugin.itemHeight);
+            plugin.totalItemWidth += plugin.itemWidth;
+        });
+        // set wrapper / window dimensions and reset position
+        this.$yackWrapper.width(this.totalItemWidth);
+        this.$yackWrapper.height(this.itemHeight);
+        this.$yackWindow.height(this.itemHeight);
+    }
     
     /**
      * Add to jquery
