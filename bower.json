@@ -1,6 +1,6 @@
 {
   "name": "yack-carousel",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "homepage": "https://github.com/mHubbell/yack-carousel",
   "authors": [
     "Hub Selto <hublabs@gmail.com>"
@@ -10,8 +10,7 @@
   "keywords": [
     "carousel",
     "jQuery",
-    "responsive",
-    "fixed-size-items"
+    "responsive"
   ],
   "license": "MIT",
   "private": true,
@@ -25,6 +24,6 @@
   "dependencies": {
     "jquery": ">=1.10.2",
     "jquery-throttle-debounce": "https://github.com/cowboy/jquery-throttle-debounce.git#v1.1",
-    "TouchSwipe-Jquery-Plugin": "https://github.com/mattbryson/TouchSwipe-Jquery-Plugin.git#v1.6.4"
+    "hammer": "https://github.com/EightMedia/hammer.js.git#v1.0.10"
   }
 }

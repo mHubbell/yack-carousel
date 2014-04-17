@@ -13,7 +13,9 @@
             allowSlivers:false,
             allowHalfs:false,
             maintainAspectRatio:false,
-            debounceDelay:500
+            debounceDelay:500,
+            pageAnimationSpeed:"fast",
+            swipable:true
     },
     pageCount = 0,
     currentPage = 1;
@@ -62,17 +64,16 @@
                 $.debounce( plugin.options.debounceDelay, function(){ 
                     plugin.resize();
                 }));
-        // listen for swipes to go next and previous
-        this.$yackWindow.swipe({
-            swipe:function(event,direction) {
-                if(direction == 'left') {
-                    plugin.nextPage();
-                } else if(direction == 'right') {
-                    plugin.prevPage();
-                }
-            },
-            excludedElements:[] // allows swiping on a tags
-        });
+        // use hammer to listen for swipes
+        if(this.options.swipable){
+            this.hammer = Hammer(this.$yackWindow.get(0));
+            this.hammer.on("swipeleft",function(){
+                plugin.nextPage();
+            });
+            this.hammer.on("swiperight",function(){
+                plugin.prevPage();
+            }); 
+        }
         // run resize to initialize sizing
         this.resize();
     };
@@ -124,10 +125,10 @@
             this.itemWidth = this.options.allowHalfs ? 
                     Math.floor( this.windowWidth / chunksFit ) * 2 :
                         Math.floor( this.windowWidth / chunksFit );
+            // TODO:: MATH to maintain non-square aspect ratios...
             this.itemHeight = this.options.maintainAspectRatio ?
                     this.itemWidth :
                         this.preferredItemHeight;
-            // TODO:: MATH to maintain non-square aspect ratios...
             this._sizeItemsAndWrapper();
         }
         // store and generate pagination info
@@ -185,7 +186,7 @@
             }
         }
         // animate it there
-        this.$yackWrapper.animate({left:xVal},"fast");
+        this.$yackWrapper.animate({left:xVal},this.options.pageAnimationSpeed);
     };
     
     /**
@@ -215,7 +216,10 @@
         this.$paddleNext.off('click');
         this.$paddlePrev.off('click');
         this.$paginationWrapper.off('click');
-        this.$yackWindow.swipe("destroy");
+        if(this.options.swipable){
+            this.hammer.off("swipeleft");
+            this.hammer.off("swiperight");
+        }
     };
     
     /**
