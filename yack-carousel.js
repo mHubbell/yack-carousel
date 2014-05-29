@@ -7,15 +7,16 @@
      * Defaults
      */
     var defaults = {
-            breakpoints:null,
-            pagination:false,
-            paddles:false,
-            allowSlivers:false,
-            allowHalfs:false,
-            maintainAspectRatio:false,
-            debounceDelay:500,
-            pageAnimationSpeed:"fast",
-            swipable:true
+        breakpoints:null,
+        pagination:false,
+        paddles:false,
+        allowSlivers:false,
+        allowHalfs:false,
+        maintainAspectRatio:false,
+        debounceDelay:500,
+        pageAnimationSpeed:"fast",
+        swipable:true,
+        continuous:true
     },
     pageCount = 0,
     currentPage = 1;
@@ -132,17 +133,21 @@
             this._sizeItemsAndWrapper();
         }
         // store and generate pagination info
-        this.fitsOnPage = Math.floor(this.windowWidth / this.itemWidth);
-        if(this.fitsOnPage < 1){
-            this.fitsOnPage = 1;
+        if(this.options.allowHalfs) {
+            this.fitsOnPage = this.windowWidth / this.itemWidth;
+            if(this.fitsOnPage < .5){
+                this.fitsOnPage = .5;
+            }
+        } else {
+            this.fitsOnPage = Math.floor(this.windowWidth / this.itemWidth);
+            if(this.fitsOnPage < 1){
+                this.fitsOnPage = 1;
+            }
         }
         var pCount = Math.ceil(this.totalItemWidth / (this.itemWidth * this.fitsOnPage));
-        if(pCount !== this.pageCount && this.options.pagination) {
+        if(pCount !== this.pageCount) {
             this.pageCount = pCount;
-            // create paginator elements if we paginate
-            if(this.options.pagination || this.options.paddles) {
-                this._generatePagination();
-            }
+            this._generatePagination();
             // go to page 1 on page count change
             this.gotoPage(1);
         } else {
@@ -155,38 +160,57 @@
      * Go to a given page
      * @param page
      */
-    YackCarousel.prototype.gotoPage = function(page) {
+    YackCarousel.prototype.gotoPage = function(page,wrap) {
+        // determine target x position for wrapper
+        var xVal = 0;
+        var windowWidth = this.$yackWindow.width();
+        var cleanupPage = null;
+        if (page === 1 && this.pageCount > 1 && this.currentPage === this.pageCount && wrap) {
+            // on last page going back to first page in "wrap" mode
+            this._generateContinuousPage(1);
+            var $firstTempItem = $(this.$yackWrapper.children('.temp-yack-item')[0]);
+            xVal = $firstTempItem[0].offsetLeft * -1;
+            cleanupPage = 1;
+        } else if (page === this.pageCount && this.pageCount > 1 && this.currentPage === 1 && wrap) {
+            // on first page going to the last page in "wrap" mode
+            this._generateContinuousPage(this.pageCount);
+            var numCreated = this.$yackWrapper.children('.temp-yack-item').length;
+            this.$yackWrapper.css('left', (this.itemWidth * numCreated) * -1);
+            xVal = 0;
+            cleanupPage = this.pageCount;
+        } else if (page === this.pageCount && this.pageCount > 1) { 
+            // going to last page
+            xVal = (this.totalItemWidth - windowWidth) * -1;
+        } else if (page > 1 && page < this.pageCount){
+            // going to a middle page
+            xVal = ((this.fitsOnPage * this.itemWidth) * (page - 1)) * -1;
+        } else {
+            // going to the first page
+            xVal = 0;
+        }
+        // animate it there
+        var plugin = this;
+        this.$yackWrapper.animate({left:xVal},this.options.pageAnimationSpeed, function(){
+            // run generate function to clear out temp items and reset wrapper size
+            plugin._generateContinuousPage();
+            // reset position of the wrapper
+            if(cleanupPage == 1){
+                $(this).css('left', 0);
+            } else if(cleanupPage == plugin.pageCount) {
+                $(this).css('left', (plugin.totalItemWidth - windowWidth) * -1);
+            }
+        });
         // set current page
         this.currentPage = page;
         // reset active pager
         if (this.options.pagination) {
             this.$paginationWrapper.children().each(function(){
                 $(this).removeClass('active');
-                if($(this).data('yack-page') == page){
+                if ($(this).data('yack-page') == page) {
                     $(this).addClass('active');
                 }
             });
         }
-        // determine target x position for wrapper
-        var xVal = 0;
-        var windowWidth = this.$yackWindow.width();
-        this.$yackWindow.removeClass('yack-page-first yack-page-last yack-page-middle');
-        if(page === this.pageCount && this.pageCount > 1) {
-            xVal = (this.totalItemWidth - windowWidth) * -1;
-            if(this.pageCount > 1) {
-                this.$yackWindow.addClass('yack-page-last');
-            }
-        } else if(page > 1 && page < this.pageCount){
-            xVal = ((this.fitsOnPage * this.itemWidth) * (page - 1)) * -1;
-            this.$yackWindow.addClass('yack-page-middle');
-        } else {
-            xVal = 0;
-            if(this.pageCount > 1) {
-                this.$yackWindow.addClass('yack-page-first');
-            }
-        }
-        // animate it there
-        this.$yackWrapper.animate({left:xVal},this.options.pageAnimationSpeed);
     };
     
     /**
@@ -195,6 +219,8 @@
     YackCarousel.prototype.nextPage = function() {
         if(this.currentPage < this.pageCount) {
             this.gotoPage(this.currentPage + 1);
+        } else {
+            this.gotoPage(1,this.options.continuous);
         }
     }
     
@@ -204,6 +230,8 @@
     YackCarousel.prototype.prevPage = function() {
         if(this.currentPage > 1) {
             this.gotoPage(this.currentPage - 1);
+        } else {
+            this.gotoPage(this.pageCount,this.options.continuous);
         }
     }
     
@@ -263,7 +291,6 @@
                 this.$paginationWrapper = $('<div class="yack-pagination"></div>');
                 $(this.element).append(this.$paginationWrapper);
                 // listen for clicks on pagers
-                
                 this.$paginationWrapper.on('click','.yack-pagination-page',function(){
                     plugin.gotoPage($(this).data('yack-page'));
                 })
@@ -271,11 +298,11 @@
             // create pager buttons
             this.$paginationWrapper.empty();
             var totalPagerWidth = 0;
-            if(this.pageCount > 1) {
-                for(var i = 0; i < this.pageCount; i++) {
+            if (this.pageCount > 1) {
+                for (var i = 0; i < this.pageCount; i++) {
                     var $pager = $('<span class="yack-pagination-page"></span>');
                     $pager.data('yack-page',i + 1);
-                    if(i + 1 == this.currentPage) {
+                    if (i + 1 == this.currentPage) {
                         $pager.addClass('active');
                     }
                     this.$paginationWrapper.append($pager);
@@ -306,7 +333,7 @@
         }
         
     };
-    
+
     /**
      * Size the items and the wrapper based on the determined item width and height
      */
@@ -322,6 +349,45 @@
         this.$yackWrapper.width(this.totalItemWidth);
         this.$yackWrapper.height(this.itemHeight);
         this.$yackWindow.height(this.itemHeight);
+    }
+    
+    /**
+     * Size the items and the wrapper based on the determined item width and height
+     */
+    YackCarousel.prototype._generateContinuousPage = function(page) {
+        // remove any current temp yack items
+        this.$yackWrapper.children('.temp-yack-item').remove();
+        // if we are generating a new page create copies of yack items to place on 
+        // the end or beginning
+        if (page === 1 || page === this.pageCount) {
+            var startIndex = 0;
+            var endIndex = 0;
+            if (page === 1) {
+                startIndex = 0;
+                endIndex = Math.ceil(this.fitsOnPage) - 1;
+            } else if (page === this.pageCount) {
+                startIndex = this.$items.length - Math.ceil(this.fitsOnPage);
+                endIndex = this.$items.length - 1;
+            }
+            var $firstNonCopy = $(this.$yackWrapper.children('.yack-item-wrapper')[0]);
+            var copies = [];
+            for(var i = startIndex; i <= endIndex; i++) {
+                var $itemToCopy = $(this.$yackWrapper.children()[i]);
+                var $clone = $itemToCopy.clone();
+                $clone.addClass('temp-yack-item');
+                copies.push($clone); 
+            }
+            var plugin = this;
+            copies.forEach(function($element){
+                if (page === 1) {
+                    $element.appendTo(plugin.$yackWrapper);
+                } else {
+                    $firstNonCopy.before($element);
+                }
+            });
+        }
+        // resize items and wrapper
+        this._sizeItemsAndWrapper();
     }
     
     /**
