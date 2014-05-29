@@ -352,7 +352,12 @@
     }
     
     /**
-     * Size the items and the wrapper based on the determined item width and height
+     * Generate a set of temporary items so that we can make the pagination appear to
+     * happen in a continuous loop.
+     * 
+     * @param page - the page to replicate 
+     * Only 1 or the current value of this.pageCount will result in copies being generated
+     * passing null / nothing / anything else will result in removal of temporary items and a size reset.
      */
     YackCarousel.prototype._generateContinuousPage = function(page) {
         // remove any current temp yack items
@@ -365,7 +370,7 @@
             if (page === 1) {
                 startIndex = 0;
                 endIndex = Math.ceil(this.fitsOnPage) - 1;
-            } else if (page === this.pageCount) {
+            } else {
                 startIndex = this.$items.length - Math.ceil(this.fitsOnPage);
                 endIndex = this.$items.length - 1;
             }
