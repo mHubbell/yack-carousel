@@ -67,7 +67,11 @@
                 }));
         // use hammer to listen for swipes
         if(this.options.swipable){
-            this.hammer = Hammer(this.$yackWindow.get(0));
+            var options = {
+                dragLockToAxis: true,
+                dragBlockHorizontal: true
+            }
+            this.hammer = Hammer(this.$yackWindow.get(0),options);
             this.hammer.on("swipeleft",function(){
                 plugin.nextPage();
             });
@@ -158,13 +162,14 @@
     
     /**
      * Go to a given page
-     * @param page
+     * @param page int - the page to go to
+     * @param wrap Boolean - are we attempting to wrap around to the first / last page?
      */
     YackCarousel.prototype.gotoPage = function(page,wrap) {
-        // determine target x position for wrapper
         var xVal = 0;
         var windowWidth = this.$yackWindow.width();
         var cleanupPage = null;
+        // determine target x position for wrapper
         if (page === 1 && this.pageCount > 1 && this.currentPage === this.pageCount && wrap) {
             // on last page going back to first page in "wrap" mode
             this._generateContinuousPage(1);
