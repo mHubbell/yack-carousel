@@ -72,12 +72,13 @@
                 dragBlockHorizontal: true
             }
             this.hammer = Hammer(this.$yackWindow.get(0),options);
-            this.hammer.on("swipeleft",function(){
-                plugin.nextPage();
+            this.hammer.on("dragend",function(ev){
+                if (ev.gesture.direction == 'left') {
+                    plugin.nextPage();
+                } else if (ev.gesture.direction == 'right') {
+                    plugin.prevPage();
+                }
             });
-            this.hammer.on("swiperight",function(){
-                plugin.prevPage();
-            }); 
         }
         // run resize to initialize sizing
         this.resize();
