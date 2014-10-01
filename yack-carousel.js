@@ -299,12 +299,15 @@
                 // listen for clicks on pagers
                 this.$paginationWrapper.on('click','.yack-pagination-page',function(){
                     plugin.gotoPage($(this).data('yack-page'));
-                })
+                });
+                // hide the pager wrapper initially
+                this.$paginationWrapper.hide();
             }
             // create pager buttons
             this.$paginationWrapper.empty();
             var totalPagerWidth = 0;
             if (this.pageCount > 1) {
+                this.$paginationWrapper.show();
                 for (var i = 0; i < this.pageCount; i++) {
                     var $pager = $('<span class="yack-pagination-page"></span>');
                     $pager.data('yack-page',i + 1);
@@ -317,8 +320,11 @@
                 this.$paginationWrapper.children().each(function(){
                     totalPagerWidth += $(this).outerWidth(true);
                 }); 
-            } 
-            this.$paginationWrapper.width(totalPagerWidth);
+                this.$paginationWrapper.width(totalPagerWidth);
+            }  else {
+                // hide the wrapper when not needed
+                this.$paginationWrapper.hide();
+            }
         }
         // add paddle elements
         if(this.options.paddles) {
